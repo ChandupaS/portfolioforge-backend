@@ -42,3 +42,6 @@ Thumbs.db
 # Logs
 *.log
 logs/
+
+application-local.properties
+application.properties
