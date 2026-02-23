@@ -4,5 +4,8 @@ public enum PortfolioStatus {
     DRAFT,
     GENERATING,
     LIVE,
-    FAILED
+    FAILED ,
+    TIMEOUT
+
+
 }

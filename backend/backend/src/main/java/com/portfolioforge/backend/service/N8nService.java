@@ -8,7 +8,9 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.reactive.function.client.WebClient;
-
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import java.util.List;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -43,13 +45,25 @@ public class N8nService {
         payload.put("githubUrl",        portfolio.getGithubUrl());
         payload.put("twitterUrl",       portfolio.getTwitterUrl());
         payload.put("colorsJson",       portfolio.getColorsJson());
+
         payload.put("skillsJson",       portfolio.getSkillsJson());
         payload.put("experienceJson",   portfolio.getExperienceJson());
         payload.put("projectsJson",     portfolio.getProjectsJson());
         payload.put("educationJson",    portfolio.getEducationJson());
         payload.put("email",            portfolio.getUser().getEmail());
         payload.put("phone",            portfolio.getUser().getPhone());
-
+// Parse colors into array so Claude can read them directly
+        try {
+            ObjectMapper mapper = new ObjectMapper();
+            List<String> colorList = mapper.readValue(
+                    portfolio.getColorsJson(),
+                    new TypeReference<List<String>>() {}
+            );
+            payload.put("colors", colorList);
+        } catch (Exception e) {
+            // fallback if parsing fails
+            payload.put("colors", List.of("#1a3a5c","#c8a96e","#f5f3ee","#0e0e0e"));
+        }
         // 3. Update status to GENERATING
         portfolio.setStatus(PortfolioStatus.GENERATING);
         portfolioRepository.save(portfolio);

@@ -10,6 +10,7 @@ import com.portfolioforge.backend.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.Optional;
 
 @Service
@@ -107,5 +108,50 @@ public class PortfolioService {
                 .orElse(PortfolioResponse.builder()
                         .message("Portfolio not found")
                         .build());
+    }
+
+    public void checkAndTimeoutStuckPortfolios() {
+        // If portfolio has been GENERATING for more than 5 minutes
+        // mark it as TIMEOUT so frontend can show error
+        portfolioRepository.findAll().stream()
+                .filter(p -> p.getStatus() == PortfolioStatus.GENERATING)
+                .filter(p -> p.getUpdatedAt()
+                        .isBefore(LocalDateTime.now().minusMinutes(5)))
+                .forEach(p -> {
+                    p.setStatus(PortfolioStatus.TIMEOUT);
+                    portfolioRepository.save(p);
+                });
+    }
+    public PortfolioResponse updatePortfolio(PortfolioRequest request) {
+        // Find existing portfolio by slug
+        Portfolio portfolio = portfolioRepository
+                .findBySlug(request.getSlug())
+                .orElseThrow(() ->
+                        new RuntimeException("Portfolio not found"));
+
+        // Update fields
+        portfolio.setFullName(request.getFullName());
+        portfolio.setProfessionalTitle(request.getProfessionalTitle());
+        portfolio.setLocation(request.getLocation());
+        portfolio.setBio(request.getBio());
+        portfolio.setColorsJson(request.getColorsJson());
+        portfolio.setSkillsJson(request.getSkillsJson());
+        portfolio.setExperienceJson(request.getExperienceJson());
+        portfolio.setProjectsJson(request.getProjectsJson());
+        portfolio.setEducationJson(request.getEducationJson());
+        portfolio.setLinkedinUrl(request.getLinkedinUrl());
+        portfolio.setGithubUrl(request.getGithubUrl());
+        portfolio.setStatus(PortfolioStatus.DRAFT);
+
+        Portfolio saved = portfolioRepository.save(portfolio);
+
+        return PortfolioResponse.builder()
+                .id(saved.getId())
+                .slug(saved.getSlug())
+                .fullDomain(saved.getFullDomain())
+                .fullName(saved.getFullName())
+                .status(saved.getStatus())
+                .message("Portfolio updated successfully!")
+                .build();
     }
 }
